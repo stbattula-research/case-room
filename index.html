@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EB1A Case Dashboard</title>
+<style>
+  :root{
+    --bg:#F5F5F7; --tile:#FFFFFF; --ink:#1D1D1F; --sub:#6E6E73;
+    --accent:#0066CC; --good:#1E9E50; --mid:#E8A13A; --bad:#D64541;
+    --line:rgba(0,0,0,.06); --chip:#F0F0F3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000000; --tile:#1C1C1E; --ink:#F5F5F7; --sub:#98989F;
+      --accent:#409CFF; --line:rgba(255,255,255,.08); --chip:#2C2C2E; }
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:32px 20px 64px}
+  .wrap{max-width:1020px; margin:0 auto}
+  h1{font-size:30px; font-weight:700; letter-spacing:-.02em}
+  h2{font-size:19px; font-weight:650; letter-spacing:-.01em; margin-bottom:4px}
+  .sub{color:var(--sub); font-size:14px; line-height:1.45}
+  .grid{display:grid; gap:16px}
+  .cols2{grid-template-columns:1fr 1fr}
+  .cols3{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:820px){ .cols2,.cols3{grid-template-columns:1fr} }
+  .tile{background:var(--tile); border-radius:20px; padding:22px}
+  .hero{display:flex; gap:28px; align-items:center; flex-wrap:wrap}
+  .bignum{font-size:84px; font-weight:750; letter-spacing:-.04em; line-height:1}
+  .bignum small{font-size:34px; color:var(--sub); font-weight:600}
+  .bar{height:8px; border-radius:99px; background:var(--chip); overflow:hidden; margin-top:10px}
+  .bar>div{height:100%; border-radius:99px; background:var(--accent); transition:width .5s ease}
+  .bar.good>div{background:var(--good)} .bar.mid>div{background:var(--mid)} .bar.bad>div{background:var(--bad)}
+  .chip{display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:99px; background:var(--chip); color:var(--sub)}
+  .chip.solid{color:var(--good)} .chip.building{color:var(--mid)} .chip.atrisk,.chip.weak{color:var(--bad)}
+  .crit-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px}
+  .score{font-size:30px; font-weight:700; letter-spacing:-.02em; white-space:nowrap}
+  .score small{font-size:15px; color:var(--sub); font-weight:600}
+  .officer{font-size:13.5px; color:var(--sub); line-height:1.5; margin-top:10px}
+  .nextstep{font-size:13.5px; line-height:1.5; margin-top:10px}
+  .nextstep b{color:var(--accent)}
+  details{margin-top:12px}
+  summary{cursor:pointer; font-size:13px; font-weight:600; color:var(--accent); list-style:none}
+  summary::-webkit-details-marker{display:none}
+  .ev{display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-top:1px solid var(--line); font-size:13.5px; line-height:1.45}
+  .ev:first-of-type{border-top:none}
+  .ev .src{color:var(--sub); font-size:12px}
+  .ev-main{flex:1}
+  .pill{border:none; cursor:pointer; font:inherit; font-size:11.5px; font-weight:650;
+    padding:4px 10px; border-radius:99px; white-space:nowrap}
+  .pill.have{background:rgba(30,158,80,.15); color:var(--good)}
+  .pill.partial{background:rgba(232,161,58,.18); color:var(--mid)}
+  .pill.missing{background:rgba(214,69,65,.13); color:var(--bad)}
+  .task{display:flex; gap:12px; padding:13px 0; border-top:1px solid var(--line); align-items:flex-start}
+  .task:first-of-type{border-top:none}
+  .task h3{font-size:15px; font-weight:620; line-height:1.35}
+  .task .det{font-size:13px; color:var(--sub); line-height:1.5; margin-top:3px}
+  .task .meta{font-size:12px; color:var(--sub); margin-top:5px}
+  .tbtn{border:none; cursor:pointer; font:inherit; font-size:12px; font-weight:650;
+    padding:6px 12px; border-radius:99px; background:var(--chip); color:var(--ink); white-space:nowrap}
+  .tbtn.done{background:rgba(30,158,80,.15); color:var(--good)}
+  .tbtn.in_progress{background:rgba(232,161,58,.18); color:var(--mid)}
+  .dl{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px}
+  .dl div{background:var(--chip); border-radius:14px; padding:10px 14px; font-size:13px}
+  .dl b{display:block; font-size:15px}
+  .paper{padding:10px 0; border-top:1px solid var(--line); font-size:14px; line-height:1.5}
+  .paper:first-of-type{border-top:none}
+  .paper .vn{color:var(--sub); font-size:12.5px}
+  .cites{float:right; font-weight:700}
+  .risk{font-size:14px; line-height:1.55; padding:7px 0 7px 18px; position:relative}
+  .risk:before{content:""; position:absolute; left:2px; top:14px; width:7px; height:7px; border-radius:99px; background:var(--bad)}
+  .conn{padding:10px 0; border-top:1px solid var(--line); font-size:13.5px; line-height:1.5}
+  .conn:first-of-type{border-top:none}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px}
+  @media (max-width:820px){ .stats{grid-template-columns:1fr 1fr} }
+  .stat{background:var(--chip); border-radius:14px; padding:14px}
+  .stat b{display:block; font-size:24px; letter-spacing:-.02em}
+  .stat span{display:block; font-size:12.5px; color:var(--sub); line-height:1.4; margin-top:2px}
+  .stat .per{font-size:11.5px}
+  .pat{display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line); font-size:14px; line-height:1.45}
+  .pill.na{background:var(--chip); color:var(--sub)}
+  .foot{color:var(--sub); font-size:12.5px; line-height:1.6; text-align:center; margin-top:26px}
+  .sec{margin-top:26px}
+  .sec-head{margin:0 4px 12px}
+  .imp{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase}
+  .imp.critical{color:var(--bad)} .imp.high{color:var(--mid)} .imp.medium,.imp.low{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <p class="sub">Loading your case…</p>
+</div>
+<script>
+// EB1A readiness scoring — JS port of app/engine.py (keep the two in sync).
+// Deterministic and evidence-driven: have=1.0, partial=0.5, missing=0.
+const FACTORS = { have: 1.0, partial: 0.5, missing: 0.0 };
+
+function scoreItems(items) {
+  const total = items.reduce((a, i) => a + i.weight, 0);
+  if (!total) return 0;
+  const earned = items.reduce((a, i) => a + i.weight * FACTORS[i.status], 0);
+  return Math.round(100 * earned / total);
+}
+
+function band(score) {
+  if (score >= 75) return "Solid";
+  if (score >= 50) return "Building";
+  if (score >= 30) return "At risk";
+  return "Weak";
+}
+
+function computeState(seed, overrides) {
+  overrides = overrides || {};
+  const evOver = overrides.evidence || {};
+  const hyOver = overrides.hygiene || {};
+  const taskOver = overrides.tasks || {};
+
+  const criteria = seed.criteria.map(c => {
+    const items = c.evidence.map((item, idx) => ({
+      ...item, status: evOver[c.id + ":" + idx] || item.status
+    }));
+    const score = scoreItems(items);
+    return { id: c.id, name: c.name, plain: c.plain, targeted: c.targeted,
+             officer_note: c.officer_note, next_step: c.next_step,
+             evidence: items, score, band: band(score) };
+  });
+
+  const targeted = criteria.filter(c => c.targeted);
+  const merits = criteria.find(c => c.id === "final_merits");
+  const hygieneItems = seed.hygiene.items.map((item, idx) => ({
+    ...item, status: hyOver[String(idx)] || item.status
+  }));
+  const hygieneScore = scoreItems(hygieneItems);
+  const criteriaAvg = Math.round(targeted.reduce((a, c) => a + c.score, 0) / targeted.length);
+  const overall = Math.round(0.5 * criteriaAvg + 0.3 * merits.score + 0.2 * hygieneScore);
+  const solidCount = targeted.filter(c => c.band === "Solid").length;
+  const needed = seed.case.criteria_needed;
+  const gateMet = solidCount >= needed && merits.score >= 60;
+
+  let verdict;
+  if (gateMet) {
+    verdict = "Filing-ready by the numbers: at least three criteria are solid and the career story holds together. Attorney review is the next step.";
+  } else if (solidCount >= needed) {
+    verdict = "Three criteria are solid, but the final-merits story (sustained acclaim over the whole career) is not there yet.";
+  } else {
+    const open = targeted.filter(c => c.band !== "Solid");
+    const closest = open.reduce((a, c) => c.score > a.score ? c : a);
+    const weakest = open.reduce((a, c) => c.score < a.score ? c : a);
+    verdict = "Not ready to file yet \u2014 " + solidCount + " of the " + needed +
+      " required criteria are solid. The fastest route to one more is " +
+      closest.name.toLowerCase() + " (" + closest.score + "%); the biggest gap is " +
+      weakest.name.toLowerCase() + " (" + weakest.score + "%).";
+  }
+
+  const tasks = seed.tasks.map(t => ({ ...t, status: taskOver[t.id] || t.status }));
+  return { case: seed.case, criteria, criteria_avg: criteriaAvg,
+           hygiene: { name: seed.hygiene.name, items: hygieneItems, score: hygieneScore, band: band(hygieneScore) },
+           overall, solid_count: solidCount, criteria_needed: needed,
+           gate_met: gateMet, verdict, tasks,
+           deadlines: seed.deadlines, papers_existing: seed.papers_existing,
+           papers_pipeline: seed.papers_pipeline, connections: seed.connections,
+           officer_brief: seed.officer_brief, benchmarks: seed.benchmarks || null };
+}
+
+if (typeof module !== "undefined") module.exports = { computeState, scoreItems, band };
+
+const SEED = {"case": {"assessment_date": "2026-11-06", "beneficiary": "Sai Teja Battula", "criteria_needed": 3, "field": "Enterprise Architecture \u2014 fintech & telecom", "firm": "EB1A Experts (Akshoy Bharali)", "patent_counsel": "Leavitt & Eldredge (Arlington, TX) \u2014 call not yet made", "petition": "EB-1A refiling (original I-140 filed Sep 17, 2025 \u2192 RFE Oct 3, 2025 \u2192 withdrawn)"}, "connections": [{"detail": "Last mined Nov 5 for the Original Contribution draft. Folders are owned by eb1aexperts.com \u2014 your own copies are still pending (task t10).", "name": "Google Drive \u2014 evidence folders", "status": "Connected (via Buddy)"}, {"detail": "Project '241066. Sai Teja Battula' \u2014 33 open tasks as of Nov 5, many are stale items from the first filing. Triage is task t13's sibling \u2014 in the paperwork score.", "name": "Asana \u2014 EB1A Experts project", "status": "Connected (via Buddy)"}, {"detail": "All 4 papers at 0 citations. Google Scholar has no public API, so counts come from OpenAlex/Semantic Scholar plus your Scholar profile once it exists.", "name": "Citations \u2014 OpenAlex / Semantic Scholar", "status": "Checked Nov 6"}, {"detail": "5 public repos (unslop, options-screener, slopcheck, canvagen, fintech-architecture-evaluator): 0 stars / 0 forks / 0 watchers each, for now.", "name": "GitHub \u2014 public repos", "status": "Checked Nov 6"}], "criteria": [{"evidence": [{"label": "Conference review records with full review text (14 assignments, 7 conferences)", "source": "Drive \u2014 Judging folder", "status": "have", "weight": 4}, {"label": "IEEE reviewer certificate (2026)", "source": "Drive \u2014 Judging folder", "status": "have", "weight": 2}, {"label": "AITA + ICDSA program-committee certificates", "source": "Drive \u2014 Judging folder", "status": "have", "weight": 2}, {"label": "Globee judging record (50 entries)", "source": "Drive \u2014 Judging folder", "status": "have", "weight": 1}, {"label": "One-page judging log (venue / date / role / papers reviewed)", "source": "Buddy can build from Drive records", "status": "missing", "weight": 1}], "id": "judging", "name": "Judging the work of others", "next_step": "Buddy builds the one-page judging log from the Drive records \u2014 then this criterion is fully packaged.", "officer_note": "Your strongest new criterion. The review records are real, named, and verifiable \u2014 keep them exactly as they are.", "plain": "You have reviewed other experts' work for IEEE-connected conferences and awards.", "targeted": true}, {"evidence": [{"label": "Citi performance reviews 2024\u20132025", "source": "Drive \u2014 Citibank evidence", "status": "have", "weight": 3}, {"label": "Org chart + employment verification (AVP title)", "source": "Drive \u2014 Citibank evidence", "status": "have", "weight": 2}, {"label": "Code approvals + coworker feedback", "source": "Drive \u2014 Citibank evidence", "status": "have", "weight": 2}, {"label": "WorldLink recognition certificate (RC3 delivery)", "source": "Drive \u2014 Verizon evidence", "status": "have", "weight": 1}, {"label": "Fresh Citi HR letter (current title/salary, for continuity)", "source": "Sai to request from Citi HR", "status": "missing", "weight": 1}, {"label": "AT&T FirstNet role proof in the AT&T folder", "source": "AT&T Drive folder is currently empty", "status": "missing", "weight": 1}], "id": "critical_role", "name": "Leading / critical role", "next_step": "Add FirstNet role proof to the empty AT&T folder \u2014 it is the one visible hole in an otherwise solid criterion.", "officer_note": "Already accepted by USCIS in the first filing, and the Citi evidence since then makes it stronger. Do not weaken it with inflated claims.", "plain": "You held a critical role at distinguished organizations (Citi AVP; AT&T FirstNet lead).", "targeted": true}, {"evidence": [{"label": "Patent filed (US provisional 63/931,460, Dec 4, 2025)", "source": "USPTO receipt \u2014 Drive, Final Merits", "status": "have", "weight": 2}, {"label": "Patent converted to non-provisional", "source": "Patent counsel \u2014 hard deadline Dec 4, 2026", "status": "missing", "weight": 3}, {"label": "7 recommendation letters, finalized (real dates/contacts, no duplicated passages)", "source": "Drafts exist \u2014 cleanup pending", "status": "partial", "weight": 3}, {"label": "Independent experts among the letter writers (2 JPMorgan + 1 Amtrak)", "source": "Named \u2014 how they know the work still to document", "status": "partial", "weight": 3}, {"label": "Original Contribution questionnaire answered", "source": "Buddy's full draft done Nov 5 \u2014 awaiting Sai's inputs", "status": "partial", "weight": 2}, {"label": "Outside adoption: third parties using your frameworks/repos", "source": "No documented adopters yet", "status": "missing", "weight": 3}, {"label": "Citations to your on-field papers", "source": "0 tracked \u2014 see Publications panel", "status": "missing", "weight": 2}, {"label": "Open-source projects (Unslop, options-screener, SlopCheck, Canvagen, evaluator)", "source": "Public repos \u2014 adoption metrics currently 0", "status": "partial", "weight": 2}], "id": "original_contributions", "name": "Original contributions of major significance", "next_step": "Two moves matter most: (1) the patent-counsel call, (2) your review of the Original Contribution draft Buddy finished on Nov 5.", "officer_note": "This is where the case will be won or lost. Today the proof is mostly your own filings and letters from colleagues. An officer looks for independent experts and outside adoption \u2014 that evidence is still thin.", "plain": "Your inventions and frameworks changed how others in the field work \u2014 and independent experts can say so.", "targeted": true}, {"evidence": [{"label": "Paper 1 (fintech architecture evaluation) \u2014 manuscript in drafting for CCGrid 2027", "source": "Draft in progress \u2014 abstract Nov 24, paper Dec 1", "status": "partial", "weight": 3}, {"label": "Paper 1 accepted in an indexed venue (IEEE proceedings)", "source": "CCGrid decision comes after submission", "status": "missing", "weight": 4}, {"label": "Paper A (card-selection decision policy) \u2014 venue shortlist ready", "source": "Decision Support Systems (rolling) / KDD ADS / ICAIF '27", "status": "partial", "weight": 1}, {"label": "Paper A manuscript written and submitted", "source": "Not started", "status": "missing", "weight": 3}, {"label": "Paper B (predictive pre-loading) \u2014 venue shortlist ready", "source": "IMWUT Feb 1, 2027 / ECML journal track", "status": "partial", "weight": 1}, {"label": "Paper B manuscript written and submitted", "source": "Not started", "status": "missing", "weight": 3}, {"label": "Patent counsel clears publication timing (papers touch the patent)", "source": "Same counsel call \u2014 gates submission", "status": "missing", "weight": 2}, {"label": "Google Scholar profile live with all papers claimed", "source": "Sai \u2014 about 10 minutes", "status": "missing", "weight": 1}], "id": "scholarly_articles", "name": "Scholarly articles", "next_step": "Finish Paper 1 for the Dec 1 CCGrid deadline \u2014 it is the closest thing to a second indexed publication.", "officer_note": "The old papers cannot be refiled \u2014 USCIS already rejected those journals, and fee-demanded acceptances make it worse. This criterion lives or dies on the new papers landing in indexed venues.", "plain": "Articles you authored, published in professional journals or conferences with real peer review.", "targeted": true}, {"evidence": [{"label": "Career timeline exhibit (2013 \u2192 today)", "source": "Buddy builds once recognition sweep is in", "status": "missing", "weight": 3}, {"label": "Pre-2025 recognition (awards, promotions, talks, press, 2015\u20132024)", "source": "Sai to upload \u2014 Batch 1 request, still open", "status": "missing", "weight": 4}, {"label": "Final-merits narrative drafted", "source": "Merit Guide drafts exist \u2014 need the timeline to be credible", "status": "partial", "weight": 2}, {"label": "Toxic items removed everywhere (paid fellowships, unverifiable claims)", "source": "Removal decision made Oct 5 \u2014 verify all copies", "status": "partial", "weight": 2}, {"label": "Attorney-ready package assembled (every claim tied to an exhibit)", "source": "Final phase \u2014 after criteria harden", "status": "missing", "weight": 3}], "id": "final_merits", "name": "Final merits \u2014 sustained acclaim", "next_step": "The 2015\u20132024 recognition sweep \u2014 anything with your name and a date on it. Buddy organizes whatever you upload.", "officer_note": "The quiet risk in this case. Almost all recognition clusters in 2025\u20132026, which reads as petition-building. A long, documented career arc is the fix \u2014 the evidence sweep for 2015\u20132024 has not been done yet.", "plain": "The overall story: a career at the top of the field, recognized over many years \u2014 not just in 2025\u201326.", "targeted": false}], "deadlines": [{"date": "2026-11-24", "label": "CCGrid 2027 abstract due"}, {"date": "2026-12-01", "label": "CCGrid 2027 full paper due"}, {"date": "2026-12-04", "label": "Provisional patent expires \u2014 non-provisional must be filed"}, {"date": "2027-02-01", "label": "IMWUT submission cycle (Paper B target)"}], "hygiene": {"items": [{"label": "Original Contribution questionnaire \u2014 draft complete (Nov 5)", "status": "partial", "weight": 2}, {"label": "Supporter response form (EB1A Experts)", "status": "missing", "weight": 1}, {"label": "Evidence folders copied into Sai's own Google Drive", "status": "missing", "weight": 2}, {"label": "Asana task list triaged (33 open tasks, many stale)", "status": "missing", "weight": 1}, {"label": "Two article ideas sent to EB1A Experts (Nov 5)", "status": "have", "weight": 1}, {"label": "Spring 2027 CPT renewal submitted (Nov 5)", "status": "have", "weight": 1}], "name": "Case paperwork"}, "officer_brief": {"as_of": "Strict review Oct 5, 2026 \u00b7 refreshed Nov 6, 2026", "summary": "Two criteria are solid today (Judging, Leading/Critical Role). The petition needs at least three \u2014 so the whole case turns on hardening Original Contributions, with Scholarly Articles as the fourth. Final merits is the quiet risk: recognition clusters in 2025\u201326, so the career-long evidence sweep matters as much as any single document.", "top_risks": ["Only 2 of the 3 required criteria are solid \u2014 do not file yet.", "Original Contributions proof is mostly self-generated today (own patent filing, colleague letters); independent adoption evidence is the gap.", "Almost all recognition is from 2025\u20132026 \u2014 an officer can read that as petition-building rather than sustained acclaim.", "Two hard deadlines inside 30 days: CCGrid paper (Dec 1) and the patent conversion (Dec 4).", "Since Aug 2026, officers may deny a thin filing without offering an RFE first (policy PA-2026-05) \u2014 filing early is no longer a safe probe."]}, "papers_existing": [{"citations": 0, "doi": "10.32628/CSEIT23112567", "note": "Venue rejected in the RFE \u2014 counts for citation/uptake evidence only", "title": "Comprehensive Framework for Scalability/Security of Fintech Web Apps", "venue": "IJSRCSEIT"}, {"citations": 0, "doi": null, "note": "Venue rejected in the RFE", "title": "Designing Resilient Fintech Systems", "venue": "IRJMETS"}, {"citations": 0, "doi": null, "note": "Venue rejected in the RFE", "title": "AI-Driven Risk Management for Fintech", "venue": "IJSAT"}, {"citations": 0, "doi": null, "note": "Venue rejected in the RFE", "title": "Event-Driven Architectures for Real-Time Risk Analysis", "venue": "IJARSCT"}], "papers_pipeline": [{"deadline": "2026-12-01", "status": "Drafting", "title": "Paper 1 \u2014 Evaluating infrastructure choices for cloud-native fintech (K8s vs serverless)", "venue": "CCGrid 2027 (IEEE)"}, {"deadline": null, "status": "Venue shortlist ready", "title": "Paper A \u2014 Optimizing multi-card payment selection at the point of authorization", "venue": "Decision Support Systems / KDD ADS / ICAIF '27"}, {"deadline": "2027-02-01", "status": "Venue shortlist ready", "title": "Paper B \u2014 Predictive pre-loading for mobile payments", "venue": "IMWUT (Feb 1, 2027) / ECML PKDD journal track"}], "tasks": [{"detail": "Gates two things: the Dec 4 non-provisional filing and publication timing for Papers A/B. Intake packet + call script are ready in the EB1A folder.", "due": null, "id": "t1", "impact": "critical", "owner": "Sai", "status": "todo", "title": "Call Leavitt & Eldredge (patent counsel) \u2014 free 15-min consult"}, {"detail": "Full draft finished Nov 5. Your part: confirm which employer projects can be disclosed, verify the letter metrics, and answer the flagged questions list at the end.", "due": null, "id": "t2", "impact": "critical", "owner": "Sai", "status": "todo", "title": "Review Buddy's Original Contribution questionnaire draft"}, {"detail": "scholar.google.com \u2192 My profile \u2192 add the 4 paper titles \u2192 make it public. About 10 minutes; only you can do it (your sign-in).", "due": null, "id": "t3", "impact": "high", "owner": "Sai", "status": "todo", "title": "Create your Google Scholar profile and claim the 4 papers"}, {"detail": "Paper 1 drafting is underway with Buddy. Abstract deadline comes first.", "due": "2026-11-24", "id": "t4", "impact": "critical", "owner": "Sai + Buddy", "status": "in_progress", "title": "Submit CCGrid 2027 abstract (Paper 1)"}, {"detail": "IEEE proceedings if accepted \u2014 the closest second indexed publication.", "due": "2026-12-01", "id": "t5", "impact": "critical", "owner": "Sai + Buddy", "status": "in_progress", "title": "Submit CCGrid 2027 full paper (Paper 1)"}, {"detail": "Provisional 63/931,460 expires this day. Counsel reviews the existing 23-page draft + drawings; Citi IP assignment must clear first.", "due": "2026-12-04", "id": "t6", "impact": "critical", "owner": "Patent counsel", "status": "todo", "title": "File the non-provisional patent application"}, {"detail": "Performance awards, promotion letters, appreciations, talks, press \u2014 anything with your name and a date. This is the final-merits repair.", "due": null, "id": "t7", "impact": "high", "owner": "Sai", "status": "todo", "title": "Upload pre-2025 recognition (2015\u20132024)"}, {"detail": "The AT&T folder is empty today. Any role letter, project doc, or deliverable naming you as FirstNet lead front-end architect.", "due": null, "id": "t8", "impact": "high", "owner": "Sai", "status": "todo", "title": "Add FirstNet role proof to the AT&T Drive folder"}, {"detail": "Still open from Akshoy's Nov 4 email.", "due": null, "id": "t9", "impact": "medium", "owner": "Sai", "status": "todo", "title": "Complete the supporter response form"}, {"detail": "The evidence folders are owned by eb1aexperts.com. Your own copies protect the case if access ever changes.", "due": null, "id": "t10", "impact": "medium", "owner": "Sai", "status": "todo", "title": "Copy the evidence set into your own Google Drive"}, {"detail": "Venue / date / role / papers reviewed, from the Drive judging records. Buddy task \u2014 no input needed from Sai.", "due": null, "id": "t11", "impact": "medium", "owner": "Buddy", "status": "todo", "title": "Build the one-page judging log"}, {"detail": "Buddy's verified shortlist is ready (Nov 6). EB1A Experts also owe venue suggestions \u2014 compare, then lock targets.", "due": null, "id": "t12", "impact": "high", "owner": "Sai + Buddy", "status": "todo", "title": "Decide the venue play for Papers A and B"}, {"detail": "Citations for the 4 papers and stars/forks on the 5 public repos, logged on the 1st of each month.", "due": null, "id": "t13", "impact": "low", "owner": "Buddy", "status": "todo", "title": "Monthly citation + GitHub metrics check"}], "benchmarks": {"intro": "Real adjudication data, checked Nov 6, 2026. USCIS publishes petition counts, not rates \u2014 percentages are calculated from those counts by law firms tracking them (Ashoori Law, Manifest Law). Full research: benchmarks file in the EB1A folder.", "figures": [{"value": "66.9%", "label": "EB-1A approval rate", "period": "FY2025 \u00b7 from USCIS I-140 counts"}, {"value": "40.7%", "label": "EB-1A approval rate", "period": "FY2026 Q1\u2013Q3 \u00b7 falling every quarter"}, {"value": "32.2%", "label": "Latest quarter's approval rate", "period": "FY2026 Q3 (Apr\u2013Jun 2026)"}, {"value": "~50%", "label": "Petitions drawing an RFE (estimate)", "period": "Practitioner/platform estimates \u00b7 USCIS publishes no RFE rate"}, {"value": "~60%", "label": "Approved after answering an RFE", "period": "Firm-reported \u00b7 no official figure exists"}, {"value": "32.5 mo", "label": "Regular processing: 80% of cases finish within", "period": "USCIS tool, Oct 2026 \u00b7 premium instead: 15 business days, $2,965"}], "figures_note": "For contrast: employer-sponsored EB-1B and EB-1C still approve at about 94\u201397%. EB-1A \u2014 the self-petitioned category, ours \u2014 accounts for roughly 93% of all EB-1 denials. The scrutiny is aimed at exactly this category.", "patterns": [{"pattern": "Step-2 final-merits failure", "status_label": "In our file", "status_class": "missing", "note": "The #1 loss point in 2026 \u2014 USCIS denied one recent case after conceding 5 of 10 criteria. Meeting criteria is the threshold, not the finish line. Our final merits sits at 14% today."}, {"pattern": "Acclaim clustered in a short window", "status_label": "In our file", "status_class": "missing", "note": "Almost all of our recognition is from 2025\u201326. The 2015\u20132024 evidence sweep on your task list is the direct fix."}, {"pattern": "Generic or insider support letters", "status_label": "In our file", "status_class": "missing", "note": "Our letter drafts lean on colleagues and repeat some passages. Independent writers, specifics, and de-duplication are still pending."}, {"pattern": "Contributions with no outside footprint", "status_label": "In our file", "status_class": "missing", "note": "Original Contributions is the most-RFE'd criterion in current practice. Ours has no documented outside adoption or citations yet."}, {"pattern": "Self-generated, unverifiable evidence", "status_label": "In our file", "status_class": "missing", "note": "Much of the contributions file today is our own filings and internal documents. Officers weight independent, third-party proof far higher."}, {"pattern": "Pay-to-publish publications", "status_label": "Handled", "status_class": "have", "note": "Present only in the old paper set, which the refiling excludes. The new papers target indexed venues only (see Publications)."}, {"pattern": "Paid memberships", "status_label": "Handled", "status_class": "have", "note": "Dropped from the filing slate on Oct 5. Remaining step: confirm they're removed from every copy of the resume and exhibits."}, {"pattern": "Judging without proof it happened", "status_label": "Handled", "status_class": "have", "note": "We hold completion records \u2014 full review texts and certificates \u2014 exactly what officers ask for."}, {"pattern": "Critical role resting on title alone", "status_label": "Handled", "status_class": "have", "note": "Backed by performance reviews, org chart, and a demonstrably distinguished employer \u2014 and USCIS already accepted this criterion once."}, {"pattern": "Volume instead of quality", "status_label": "Partly", "status_class": "partial", "note": "Bites at packaging time: every exhibit must tie to a criterion and its significance. The attorney-package phase enforces this."}, {"pattern": "Thin filing denied without an RFE", "status_label": "Partly", "status_class": "partial", "note": "Since Aug 5, 2026 (policy PA-2026-05) officers may deny outright when initial evidence is missing. Our filing gate exists for exactly this: nothing files until it is complete."}, {"pattern": "Published material that isn't real coverage", "status_label": "Not claimed", "status_class": "na", "note": "Not in our slate (backup only), so this pattern can't hurt the filing."}], "posture": "Cases in our current posture \u2014 two solid criteria and a third still thin \u2014 are exactly the filings the 2026 numbers are punishing. The data backs our plan: don't file yet. Corroborate Original Contributions with independent proof and finish one indexed publication, so we file with four criteria instead of a hopeful three.", "limits": "What the data cannot tell us: USCIS publishes no approval rates by number of criteria, by criterion, or by evidence profile \u2014 so no honest 'probability for our exact case' exists. The percentage on this page is our evidence readiness; these benchmarks are the climate it will be judged in."}};
+const LS_KEY = "eb1a-state-v1";
+let overrides = {evidence:{}, tasks:{}, hygiene:{}};
+try { overrides = {...overrides, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}")}; } catch(e) {}
+
+const $ = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const barClass = (s) => s >= 75 ? 'good' : s >= 50 ? '' : s >= 30 ? 'mid' : 'bad';
+const chipClass = (b) => b.toLowerCase().replace(' ', '');
+
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(overrides)); }
+function load(){ render(computeState(SEED, overrides)); }
+
+function evRow(critId, item, idx){
+  const label = {have:'In file', partial:'Partly there', missing:'Missing'}[item.status];
+  return `<div class="ev"><div class="ev-main">${esc(item.label)}<div class="src">${esc(item.source)}</div></div>
+    <button class="pill ${item.status}" data-ev="${critId}:${idx}">${label}</button></div>`;
+}
+
+function render(d){
+  const app = document.getElementById('app');
+  const days = (ds) => Math.ceil((new Date(ds+'T12:00:00') - new Date()) / 864e5);
+  app.innerHTML = '';
+
+  app.append($(`<div>
+    <h1>EB1A Case Dashboard</h1>
+    <p class="sub">${esc(d.case.beneficiary)} · ${esc(d.case.field)}<br>${esc(d.case.petition)}</p>
+  </div>`));
+
+  const hero = $(`<section class="tile sec">
+    <div class="hero">
+      <div><div class="bignum">${d.overall}<small>%</small></div>
+      <p class="sub" style="margin-top:6px">overall readiness</p></div>
+      <div style="flex:1; min-width:260px">
+        <h2>${d.gate_met ? 'Filing-ready by the numbers' : 'Not ready to file — yet'}</h2>
+        <p class="sub" style="margin-top:6px">${esc(d.verdict)}</p>
+        <p style="margin-top:12px; font-size:14px"><b>${d.solid_count} of ${d.criteria_needed} required criteria are solid.</b>
+        <span class="sub">USCIS needs at least ${d.criteria_needed} criteria met, plus a final-merits pass. This score is computed from the evidence checklist below — when a document lands, tap its tag and the number moves.</span></p>
+        <div class="bar ${barClass(d.overall)}"><div style="width:${d.overall}%"></div></div>
+        <p class="sub" style="margin-top:8px">How it's built: half from the four targeted criteria, 30% from final merits, 20% from case paperwork (currently ${d.hygiene.score}%). Your taps are saved on this device; Buddy's syncs refresh the underlying case data.</p>
+      </div>
+    </div>
+  </section>`);
+  app.append(hero);
+
+  const dl = $(`<section class="tile sec"><h2>Deadlines that matter</h2><div class="dl"></div></section>`);
+  const dlBox = dl.querySelector('.dl');
+  d.deadlines.forEach(x => {
+    const n = days(x.date);
+    dlBox.append($(`<div><b>${esc(x.date)}</b>${esc(x.label)} · ${n >= 0 ? n + ' days' : 'passed'}</div>`));
+  });
+  app.append(dl);
+
+  const secC = $(`<div class="sec"><div class="sec-head"><h2>The criteria</h2>
+    <p class="sub">Tap any evidence tag to update it — the scores recompute instantly. Words first: the grey line under each name is what the criterion actually asks.</p></div>
+    <div class="grid cols2"></div></div>`);
+  const grid = secC.querySelector('.grid');
+  d.criteria.forEach(c => {
+    const t = $(`<section class="tile">
+      <div class="crit-head"><div><h2 style="font-size:17px">${esc(c.name)}</h2>
+      <p class="sub">${esc(c.plain)}</p></div>
+      <div class="score">${c.score}<small>%</small></div></div>
+      <div style="margin-top:8px"><span class="chip ${chipClass(c.band)}">${esc(c.band)}</span>
+      ${c.targeted ? '<span class="chip">Targeted in this filing</span>' : '<span class="chip">Second hurdle — always judged</span>'}</div>
+      <div class="bar ${barClass(c.score)}"><div style="width:${c.score}%"></div></div>
+      <p class="officer"><b>Officer's eye:</b> ${esc(c.officer_note)}</p>
+      <p class="nextstep"><b>Next step:</b> ${esc(c.next_step)}</p>
+      <details><summary>Evidence checklist (${c.evidence.filter(e=>e.status==='have').length} of ${c.evidence.length} in file)</summary>
+      <div>${c.evidence.map((e,i)=>evRow(c.id, e, i)).join('')}</div></details>
+    </section>`);
+    grid.append(t);
+  });
+  app.append(secC);
+
+  const ob = $(`<section class="tile sec"><h2>The reviewing officer's brief</h2>
+    <p class="sub">${esc(d.officer_brief.as_of)}</p>
+    <p style="font-size:14.5px; line-height:1.6; margin-top:10px">${esc(d.officer_brief.summary)}</p>
+    <div style="margin-top:8px">${d.officer_brief.top_risks.map(r=>`<p class="risk">${esc(r)}</p>`).join('')}</div>
+  </section>`);
+  app.append(ob);
+
+  // Benchmarks + pattern check
+  if (d.benchmarks) {
+    const bm = $(`<section class="tile sec"><h2>Benchmarks — how EB-1A cases are faring</h2>
+      <p class="sub">${esc(d.benchmarks.intro)}</p>
+      <div class="stats">${d.benchmarks.figures.map(f=>`<div class="stat"><b>${esc(f.value)}</b><span>${esc(f.label)}</span><span class="per">${esc(f.period)}</span></div>`).join('')}</div>
+      <p class="sub" style="margin-top:12px">${esc(d.benchmarks.figures_note)}</p>
+    </section>`);
+    app.append(bm);
+    const bp = $(`<section class="tile sec"><h2>Pattern check — our file vs. the denial playbook</h2>
+      <p class="sub">The patterns officers and attorneys screen for, matched against your actual file.</p>
+      <div style="margin-top:6px">${d.benchmarks.patterns.map(p=>`<div class="pat"><div style="flex:1"><b>${esc(p.pattern)}</b><div style="color:var(--sub); font-size:12.5px; line-height:1.5; margin-top:2px">${esc(p.note)}</div></div><span class="pill ${p.status_class}">${esc(p.status_label)}</span></div>`).join('')}</div>
+      <p style="font-size:14px; line-height:1.6; margin-top:12px"><b>What this means for us:</b> ${esc(d.benchmarks.posture)}</p>
+      <p class="sub" style="margin-top:8px">${esc(d.benchmarks.limits)}</p>
+    </section>`);
+    app.append(bp);
+  }
+
+  const order = {critical:0, high:1, medium:2, low:3};
+  const tasks = [...d.tasks].sort((a,b)=> (a.status==='done')-(b.status==='done') || order[a.impact]-order[b.impact]);
+  const secT = $(`<div class="sec"><div class="sec-head"><h2>Your step-by-step next steps</h2>
+    <p class="sub">In impact order. Mark them done here — or just tell Buddy and he'll update the file.</p></div>
+    <section class="tile"></section></div>`);
+  const tBox = secT.querySelector('.tile');
+  tasks.forEach(t => {
+    const btn = {todo:'Start', in_progress:'In progress', done:'Done'}[t.status];
+    tBox.append($(`<div class="task"><div style="flex:1">
+      <span class="imp ${t.impact}">${esc(t.impact)}</span>
+      <h3>${esc(t.title)}</h3><p class="det">${esc(t.detail)}</p>
+      <p class="meta">Owner: ${esc(t.owner)}${t.due ? ' · Due ' + esc(t.due) : ''}</p></div>
+      <button class="tbtn ${t.status}" data-task="${t.id}">${btn}</button></div>`));
+  });
+  app.append(secT);
+
+  const secP = $(`<div class="sec"><div class="sec-head"><h2>Publications & citations</h2>
+    <p class="sub">Citations checked ${esc(d.case.assessment_date)}. The existing four build citation evidence only — the new papers carry the criterion.</p></div>
+    <div class="grid cols2">
+      <section class="tile"><h2 style="font-size:16px">Existing papers</h2>
+        ${d.papers_existing.map(p=>`<div class="paper"><span class="cites">${p.citations} citations</span>${esc(p.title)}<div class="vn">${esc(p.venue)}${p.doi ? ' · DOI ' + esc(p.doi) : ''} — ${esc(p.note)}</div></div>`).join('')}
+      </section>
+      <section class="tile"><h2 style="font-size:16px">New papers in the pipeline</h2>
+        ${d.papers_pipeline.map(p=>`<div class="paper">${esc(p.title)}<div class="vn">${esc(p.venue)} · ${esc(p.status)}${p.deadline ? ' · due ' + esc(p.deadline) : ''}</div></div>`).join('')}
+      </section>
+    </div></div>`);
+  app.append(secP);
+
+  const secX = $(`<div class="sec"><div class="sec-head"><h2>Connected sources</h2>
+    <p class="sub">Buddy refreshes these on each sync — Drive evidence, the Asana project, citation counts, GitHub metrics — and republishes this page.</p></div>
+    <section class="tile">
+      ${d.connections.map(c=>`<div class="conn"><b>${esc(c.name)}</b> — ${esc(c.status)}<div class="sub">${esc(c.detail)}</div></div>`).join('')}
+    </section></div>`);
+  app.append(secX);
+
+  app.append($(`<p class="foot">This dashboard measures <b>evidence readiness</b> from your actual case file — it is not a prediction of any USCIS decision, and no tool can guarantee an approval or promise no RFE. What it does guarantee: nothing in the file is a surprise, every gap has a named next step, and the officer's likely objections are answered before the attorney ever sees the package.<br>Last assessment: ${esc(d.case.assessment_date)} · Firm: ${esc(d.case.firm)} · Patent counsel: ${esc(d.case.patent_counsel)}</p>`));
+
+  app.querySelectorAll('[data-task]').forEach(b => b.onclick = () => {
+    const cur = {Start:'in_progress', 'In progress':'done', Done:'todo'}[b.textContent];
+    overrides.tasks[b.dataset.task] = cur; save(); load();
+  });
+  app.querySelectorAll('[data-ev]').forEach(b => b.onclick = () => {
+    const key = b.dataset.ev;
+    const cur = b.classList.contains('have') ? 'partial' : b.classList.contains('partial') ? 'missing' : 'have';
+    overrides.evidence[key] = cur; save(); load();
+  });
+}
+load();
+</body>
+</html>
